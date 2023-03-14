@@ -100,6 +100,12 @@ func WithLevel(level zapcore.Level) OptionFunc {
 	}
 }
 
+func WithCache(cache cache.Cache) OptionFunc {
+	return func(dt *DingTalk) {
+		dt.cache = cache
+	}
+}
+
 // isv 是否isv
 func (ding *DingTalk) isv() bool {
 	return len(ding.ticket) > 0 && len(ding.corpId) > 0
@@ -123,10 +129,12 @@ func NewClient(key, secret string, opts ...OptionFunc) (ding *DingTalk, err erro
 		opt(ding)
 	}
 
-	if ding.isv() {
-		ding.cache = cache.NewFileCache(strings.Join([]string{".token", "isv", key}, "/"), ding.corpId)
-	} else {
-		ding.cache = cache.NewFileCache(strings.Join([]string{".token", "corp"}, "/"), key)
+	if ding.cache == nil {
+		if ding.isv() {
+			ding.cache = cache.NewFileCache(strings.Join([]string{".token", "isv", key}, "/"), ding.corpId)
+		} else {
+			ding.cache = cache.NewFileCache(strings.Join([]string{".token", "corp"}, "/"), key)
+		}
 	}
 
 	ding.client = &http.Client{Timeout: 10 * time.Second}
